@@ -1,0 +1,49 @@
+{
+  "embedding": {
+    "baseUrl": "https://api.siliconflow.cn/v1",
+    "apiKey": "你的密钥",
+    "model": "BAAI/bge-m3"
+  },
+  "llm": {
+    "baseUrl": "https://api.deepseek.com/v1",
+    "apiKey": "你的密钥",
+    "model": "deepseek-chat"
+  },
+  "generativeMemory": {
+    "enabled": true
+  },
+  "graph": {
+    "enabled": false,
+    "baseUrl": "https://api.deepseek.com/v1",
+    "apiKey": "可选：图谱提取专用 API 密钥，不填则用 llm 的",
+    "model": "可选：图谱提取专用模型"
+  },
+  "space": {
+    "enabled": false,
+    "baseUrl": "https://api.deepseek.com/v1",
+    "apiKey": "可选：房间场景生成专用 API 密钥，不填则用 llm 的",
+    "model": "可选：房间场景生成专用模型"
+  },
+  "travel": {
+    "enabled": false,
+    "baseUrl": "https://api.deepseek.com/v1",
+    "apiKey": "可选：旅行世界引擎专用 API 密钥，不填则用 llm 的",
+    "model": "可选：旅行世界引擎专用模型"
+  },
+  "proxy": {
+    "enabled": false,
+    "listenPort": 3457,
+    "targets": {
+      "default": {
+        "baseUrl": "https://api.deepseek.com/v1",
+        "apiKey": "你的密钥",
+        "model": "deepseek-chat"
+      },
+      "claude": {
+        "baseUrl": "https://api.anthropic.com/v1",
+        "apiKey": "你的 Anthropic 密钥",
+        "model": "claude-sonnet-4-20250514"
+      }
+    }
+  }
+}

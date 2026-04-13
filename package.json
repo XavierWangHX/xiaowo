@@ -1,0 +1,9 @@
+{
+  "name": "xiaowo",
+  "version": "1.0.0",
+  "description": "小窝记忆系统 CLI",
+  "type": "module",
+  "bin": {
+    "xiaowo": "./xiaowo.js"
+  }
+}

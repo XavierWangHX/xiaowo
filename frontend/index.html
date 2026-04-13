@@ -1,0 +1,2675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小窝</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #191c24;
+      --surface: #21252e;
+      --surface-hover: #282d38;
+      --border: #333a48;
+      --text: #d8dce6;
+      --text-dim: #7a8494;
+      --accent: #6b8acd;
+      --accent-dim: #4e6fa8;
+      --accent-warm: #c4956a;
+      --danger: #c96b6b;
+      --success: #6aad8e;
+      --warning: #c4a56a;
+      --profile: #6aad9e;
+      --persistent: #6b8acd;
+      --events: #c4956a;
+      --personal: #9a7abd;
+      --projects: #6a8ec4;
+      --snapshot: #c4b06a;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+      letter-spacing: 0.01em;
+    }
+
+    /* 侧边栏 */
+    .sidebar {
+      width: 240px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow-y: auto;
+    }
+
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-header h1 { font-size: 17px; color: var(--accent-warm); font-weight: 500; letter-spacing: 0.05em; }
+    .sidebar-header p { font-size: 12px; color: var(--text-dim); margin-top: 6px; line-height: 1.5; }
+    .sidebar-header .time-hint { font-size: 11px; color: var(--text-dim); margin-top: 8px; opacity: 0.7; }
+
+    .search-btn-area {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .search-trigger {
+      width: 100%;
+      padding: 9px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-dim);
+      font-size: 13px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+    }
+
+    .search-trigger:hover { border-color: var(--accent-warm); background: var(--surface-hover); }
+
+    /* 搜索浮层 */
+    .search-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 300;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 10vh;
+    }
+
+    .search-overlay.show { display: flex; }
+
+    .search-modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 600px;
+      max-width: 90vw;
+      max-height: 70vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .search-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .search-header input {
+      flex: 1;
+      padding: 10px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+    }
+
+    .search-header input:focus { border-color: var(--accent); }
+
+    .search-filter {
+      display: flex;
+      gap: 4px;
+      padding: 0 16px;
+      padding-top: 8px;
+    }
+
+    .search-filter-btn {
+      padding: 4px 12px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .search-filter-btn:hover { background: var(--surface-hover); }
+    .search-filter-btn.active { background: var(--accent-dim); color: white; border-color: var(--accent-dim); }
+
+    .search-results {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+    }
+
+    .search-result-item {
+      padding: 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 4px;
+      transition: background 0.15s;
+    }
+
+    .search-result-item:hover { background: var(--surface-hover); }
+
+    .search-result-title {
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .search-result-preview {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 4px;
+      line-height: 1.4;
+      max-height: 40px;
+      overflow: hidden;
+    }
+
+    .search-highlight {
+      background: rgba(124, 140, 240, 0.3);
+      border-radius: 2px;
+      padding: 0 2px;
+    }
+
+    .search-empty {
+      text-align: center;
+      color: var(--text-dim);
+      padding: 32px;
+      font-size: 14px;
+    }
+
+    .nav-section { padding: 8px; }
+    .nav-section-title { font-size: 11px; color: var(--text-dim); padding: 8px 12px 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+    .nav-item {
+      padding: 10px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.15s;
+    }
+
+    .nav-item:hover { background: var(--surface-hover); }
+    .nav-item.active { background: var(--surface-hover); color: var(--text); border-left: 2px solid var(--accent-warm); padding-left: 10px; }
+
+    .nav-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .sidebar-footer {
+      padding: 12px;
+      border-top: 1px solid var(--border);
+      margin-top: auto;
+    }
+
+    /* 按钮 */
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.15s;
+    }
+
+    .btn-primary { background: var(--accent-warm); color: white; width: 100%; }
+    .btn-primary:hover { background: #b5865e; }
+    .btn-small { padding: 4px 10px; font-size: 12px; }
+    .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+    .btn-danger:hover { background: var(--danger); color: white; }
+    .btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: var(--surface-hover); color: var(--text); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-success:hover { opacity: 0.9; }
+
+    /* 主内容区 */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .main-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .main-header h2 { font-size: 16px; font-weight: 500; }
+    .header-actions { display: flex; gap: 8px; }
+
+    .memory-list { flex: 1; overflow-y: auto; padding: 16px 24px; }
+
+    .memory-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-left: 3px solid transparent;
+    }
+
+    .memory-card:hover { border-left-color: var(--accent-warm); background: var(--surface-hover); }
+    .memory-card.active { border-left-color: var(--accent); background: var(--surface-hover); }
+
+    .memory-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .memory-title { font-size: 15px; font-weight: 500; }
+    .memory-meta { font-size: 11px; color: var(--text-dim); }
+
+    .layer-tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .layer-tag.profile { color: var(--profile); background: rgba(96, 192, 192, 0.1); }
+    .layer-tag.persistent { color: var(--persistent); background: rgba(124, 140, 240, 0.1); }
+    .layer-tag.events { color: var(--events); background: rgba(192, 128, 96, 0.1); }
+    .layer-tag.personal { color: var(--personal); background: rgba(160, 112, 208, 0.1); }
+    .layer-tag.projects { color: var(--projects); background: rgba(96, 144, 224, 0.1); }
+    .layer-tag.snapshot { color: var(--snapshot); background: rgba(224, 192, 96, 0.1); }
+    .layer-tag.travel { color: var(--events); background: rgba(192, 128, 96, 0.1); }
+
+    .memory-preview {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.5;
+      max-height: 60px;
+      overflow: hidden;
+    }
+
+    .memory-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    .tag-chip {
+      font-size: 11px;
+      padding: 1px 6px;
+      border-radius: 3px;
+      background: rgba(124, 140, 240, 0.15);
+      color: var(--accent);
+    }
+
+    /* 编辑区 */
+    .editor-panel {
+      width: 500px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .editor-panel.hidden { display: none; }
+
+    .editor-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .editor-fields {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .editor-fields select,
+    .editor-fields input {
+      padding: 6px 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .editor-row { display: flex; gap: 8px; }
+    .editor-row select { width: 140px; }
+    .editor-row input { flex: 1; }
+
+    .editor-body { flex: 1; padding: 0 16px 16px; overflow: hidden; min-height: 0; }
+
+    .editor-body textarea {
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.6;
+      padding: 12px;
+      resize: none;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .editor-body textarea:focus { border-color: var(--accent); }
+
+    .editor-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* 配置面板 */
+    .config-panel {
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .config-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .config-section h3 { font-size: 15px; margin-bottom: 12px; color: var(--accent); }
+
+    .config-field { margin-bottom: 12px; }
+    .config-field label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+
+    .config-field input {
+      width: 100%;
+      padding: 8px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .config-field input:focus { border-color: var(--accent); }
+
+    .config-status {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .config-status.ok { color: var(--success); background: rgba(96, 192, 144, 0.1); }
+    .config-status.error { color: var(--danger); background: rgba(224, 96, 112, 0.1); }
+    .config-status.none { color: var(--text-dim); background: rgba(136, 136, 170, 0.1); }
+
+    /* 改写预览 */
+    .recall-preview {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 8px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+
+    .recall-preview.loading { color: var(--text-dim); font-style: italic; }
+
+    /* 空状态 */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-dim);
+    }
+
+    .empty-state p { font-size: 14px; margin-top: 8px; }
+
+    /* 仪表盘 */
+    .dashboard { padding: 24px; overflow-y: auto; display: none; }
+    .dashboard.active { display: block; }
+
+    .dash-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .dash-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      transition: border-color 0.2s;
+    }
+
+    .dash-card:hover { border-color: var(--accent-warm); }
+
+    .dash-card h3 {
+      font-size: 13px;
+      color: var(--text-dim);
+      font-weight: 400;
+      margin-bottom: 12px;
+      letter-spacing: 0.03em;
+    }
+
+    .dash-stat {
+      font-size: 32px;
+      font-weight: 300;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .dash-stat-unit {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-left: 4px;
+    }
+
+    .dash-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .dash-bar-label {
+      font-size: 12px;
+      color: var(--text-dim);
+      width: 60px;
+      flex-shrink: 0;
+    }
+
+    .dash-bar-track {
+      flex: 1;
+      height: 6px;
+      background: var(--bg);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .dash-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+
+    .dash-bar-count {
+      font-size: 11px;
+      color: var(--text-dim);
+      width: 30px;
+      text-align: right;
+    }
+
+    .dash-recent-item {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+
+    .dash-recent-item:last-child { border-bottom: none; }
+    .dash-recent-item:hover .dash-recent-title { color: var(--accent-warm); }
+
+    .dash-recent-title {
+      font-size: 13px;
+      color: var(--text);
+      transition: color 0.15s;
+    }
+
+    .dash-recent-meta {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    .dash-section-title {
+      font-size: 14px;
+      color: var(--text);
+      font-weight: 500;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dash-entity-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .dash-entity {
+      padding: 6px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .dash-entity:hover {
+      border-color: var(--accent-warm);
+      color: var(--accent-warm);
+    }
+
+    .dash-entity .locked-icon {
+      font-size: 10px;
+      margin-left: 4px;
+      opacity: 0.5;
+    }
+
+    .dash-travel-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    .dash-travel-item:last-child { border-bottom: none; }
+
+    .dash-travel-dest { color: var(--text); }
+    .dash-travel-date { font-size: 11px; color: var(--text-dim); }
+
+    .dash-scene-text {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.6;
+      font-style: italic;
+    }
+
+    /* 通知 */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--success);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 13px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 200;
+    }
+
+    .toast.show { opacity: 1; }
+
+    /* 闹钟面板 */
+    .alarm-panel {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      width: 420px;
+      max-width: 90vw;
+      z-index: 400;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .alarm-panel.show { display: block; }
+
+    .alarm-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 399;
+    }
+
+    .alarm-overlay.show { display: block; }
+
+    .alarm-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .alarm-stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    .alarm-stat-value {
+      font-weight: 600;
+      color: var(--accent);
+      font-size: 18px;
+    }
+
+    .alarm-slider-area {
+      padding: 16px 0;
+    }
+
+    .alarm-slider-area label {
+      font-size: 12px;
+      color: var(--text-dim);
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .alarm-slider {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .alarm-slider-value {
+      text-align: center;
+      font-size: 14px;
+      color: var(--text);
+      margin-top: 4px;
+    }
+
+    .alarm-input-area {
+      padding: 8px 0;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .alarm-input-area input {
+      flex: 1;
+      padding: 6px 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .alarm-history {
+      max-height: 120px;
+      overflow-y: auto;
+      margin-top: 12px;
+    }
+
+    .alarm-history-item {
+      font-size: 12px;
+      color: var(--text-dim);
+      padding: 4px 0;
+    }
+
+    .alarm-ringing {
+      color: var(--danger);
+      font-weight: 600;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* 生成式记忆开关 */
+    .gen-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      margin-bottom: 8px;
+    }
+
+    .gen-toggle-label {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      background: var(--border);
+      border-radius: 11px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle-switch.on {
+      background: var(--success);
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      background: white;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.2s;
+    }
+
+    .toggle-switch.on::after {
+      transform: translateX(18px);
+    }
+
+    /* 滚动条 */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+    /* markdown预览 */
+    .md-preview {
+      width: 100%;
+      height: 100%;
+      overflow-y: auto !important;
+      padding: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--text);
+      display: none;
+      min-height: 0;
+    }
+
+    .md-preview h1, .md-preview h2, .md-preview h3 {
+      color: var(--accent-warm);
+      margin: 16px 0 8px;
+      font-weight: 500;
+    }
+
+    .md-preview h2 { font-size: 16px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+    .md-preview h3 { font-size: 14px; }
+
+    .md-preview p { margin: 8px 0; }
+
+    .md-preview ul, .md-preview ol { padding-left: 20px; margin: 8px 0; }
+    .md-preview li { margin: 4px 0; }
+
+    .md-preview strong { color: var(--text); font-weight: 600; }
+    .md-preview em { color: var(--text-dim); }
+
+    .md-preview blockquote {
+      border-left: 3px solid var(--accent-warm);
+      padding: 4px 12px;
+      margin: 8px 0;
+      color: var(--text-dim);
+      background: rgba(196, 149, 106, 0.05);
+      border-radius: 0 4px 4px 0;
+    }
+
+    .md-preview code {
+      background: var(--surface-hover);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 13px;
+      font-family: monospace;
+    }
+
+    .md-preview pre {
+      background: var(--surface-hover);
+      padding: 12px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 8px 0;
+    }
+
+    .md-preview pre code { background: none; padding: 0; }
+
+    .md-preview hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 16px 0;
+    }
+
+    .editor-mode-toggle {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 8px;
+      padding: 0 16px;
+    }
+
+    .mode-btn {
+      padding: 4px 12px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .mode-btn.active {
+      background: var(--accent-warm);
+      color: white;
+      border-color: var(--accent-warm);
+    }
+
+    /* 整体过渡 */
+    * { transition-timing-function: ease; }
+  </style>
+</head>
+<body>
+
+  <!-- 侧边栏 -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>小窝</h1>
+      <p id="sidebarGreeting">台灯亮着，怀表在转。</p>
+      <div class="time-hint" id="timeHint"></div>
+    </div>
+    <div class="search-btn-area">
+      <button class="search-trigger" onclick="openSearch()">搜索...</button>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-item active" onclick="showDashboard()" id="nav-dashboard">
+        <span style="opacity:0.6;">&#8962;</span>
+        <span>概览</span>
+      </div>
+      <div class="nav-item" onclick="selectLayer('all')" id="nav-all">
+        <span style="opacity:0.6;">&#9776;</span>
+        <span>全部记忆</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">书桌前</div>
+      <div class="nav-item" onclick="selectLayer('events')" id="nav-events">
+        <span class="nav-dot" style="background:var(--events)"></span>
+        <span>事件记忆</span>
+      </div>
+      <div class="nav-item" onclick="selectLayer('personal')" id="nav-personal">
+        <span class="nav-dot" style="background:var(--personal)"></span>
+        <span>个人记忆</span>
+      </div>
+      <div class="nav-item" onclick="selectLayer('persistent')" id="nav-persistent">
+        <span class="nav-dot" style="background:var(--persistent)"></span>
+        <span>常驻记忆</span>
+      </div>
+      <div class="nav-item" onclick="showDiary()" id="nav-diary">
+        <span class="nav-dot" style="background:var(--warning)"></span>
+        <span>日记</span>
+      </div>
+      <div class="nav-item" onclick="selectLayer('snapshot')" id="nav-snapshot">
+        <span class="nav-dot" style="background:var(--snapshot)"></span>
+        <span>快照</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">窗边</div>
+      <div class="nav-item" onclick="selectLayer('travel')" id="nav-travel-layer">
+        <span class="nav-dot" style="background:var(--events)"></span>
+        <span>旅行记忆</span>
+      </div>
+      <div class="nav-item" onclick="showTravelPanel()" id="nav-travel">
+        <span class="nav-dot" style="background:var(--success)"></span>
+        <span>旅行</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">软木板墙</div>
+      <div class="nav-item" onclick="showTagDirectory()" id="nav-tags">
+        <span class="nav-dot" style="background:var(--accent)"></span>
+        <span>标签</span>
+      </div>
+      <div class="nav-item" onclick="showGraphPanel()" id="nav-graph">
+        <span class="nav-dot" style="background:var(--profile)"></span>
+        <span>图谱 & 人物卡</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">资料柜</div>
+      <div class="nav-item" onclick="selectLayer('profile')" id="nav-profile">
+        <span class="nav-dot" style="background:var(--profile)"></span>
+        <span>用户画像</span>
+      </div>
+      <div class="nav-item" onclick="selectLayer('archive')" id="nav-archive">
+        <span class="nav-dot" style="background:var(--text-dim)"></span>
+        <span>全部档案</span>
+      </div>
+      <div class="nav-item" onclick="selectLayer('archive/character_profile')" id="nav-archive-character_profile">
+        <span class="nav-dot" style="background:#c08080"></span>
+        <span>角色档案</span>
+      </div>
+      <div class="nav-item" onclick="selectLayer('archive/user_profile')" id="nav-archive-user_profile">
+        <span class="nav-dot" style="background:#80a0c0"></span>
+        <span>用户档案</span>
+      </div>
+      <div class="nav-item" onclick="selectLayer('archive/personal')" id="nav-archive-personal">
+        <span class="nav-dot" style="background:#9a7abd"></span>
+        <span>个人档案</span>
+      </div>
+      <div class="nav-item" onclick="selectLayer('archive/misc')" id="nav-archive-misc">
+        <span class="nav-dot" style="background:var(--text-dim)"></span>
+        <span>杂项</span>
+      </div>
+      <div class="nav-item" onclick="selectLayer('reference')" id="nav-reference">
+        <span class="nav-dot" style="background:var(--warning)"></span>
+        <span>参考资料</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">白板</div>
+      <div class="nav-item" onclick="selectLayer('projects')" id="nav-projects">
+        <span class="nav-dot" style="background:var(--projects)"></span>
+        <span>项目记忆</span>
+      </div>
+      <div class="nav-item" onclick="selectLayer('designs')" id="nav-designs">
+        <span class="nav-dot" style="background:var(--danger)"></span>
+        <span>设计文档</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">冰箱旁</div>
+      <div class="nav-item" onclick="showConfig()" id="nav-config">
+        <span class="nav-dot" style="background:var(--text-dim)"></span>
+        <span>系统配置</span>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div style="margin-bottom:4px;">
+        <button class="btn btn-ghost" style="width:100%;font-size:12px;" onclick="openAlarm()">闹钟</button>
+      </div>
+      <div style="margin-bottom:4px;">
+        <button class="btn btn-ghost" style="width:100%;font-size:12px;" onclick="openWakeup()">唤醒</button>
+      </div>
+      <div class="gen-toggle">
+        <span class="gen-toggle-label">生成式记忆</span>
+        <div class="toggle-switch" id="genToggle" onclick="toggleGenerativeMemory()"></div>
+      </div>
+      <div class="gen-toggle" id="continuationRow" style="display:none;">
+        <span class="gen-toggle-label">窗口续接</span>
+        <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px;color:var(--danger);" onclick="clearContinuation()">清除</button>
+      </div>
+      <button class="btn btn-primary" onclick="newMemory()">+ 新记忆</button>
+    </div>
+  </div>
+
+  <!-- 主内容 -->
+  <div class="main">
+    <div class="main-header">
+      <h2 id="mainTitle">全部记忆</h2>
+      <div class="header-actions">
+        <input type="date" id="dateFilter" style="padding:4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;cursor:pointer;" onchange="filterByDate(this.value)" title="按日期筛选" />
+        <button class="btn btn-ghost btn-small" id="clearDateBtn" style="display:none;" onclick="clearDateFilter()">清除日期</button>
+        <button class="btn btn-ghost btn-small" onclick="newMemory()">+ 新记忆</button>
+      </div>
+    </div>
+    <div class="memory-list" id="memoryList"></div>
+
+    <!-- 仪表盘 -->
+    <div class="dashboard" id="dashboard">
+      <div class="dash-grid">
+        <!-- 记忆总量 -->
+        <div class="dash-card">
+          <h3>记忆总量</h3>
+          <div id="dashMemoryTotal" class="dash-stat">-</div>
+          <div id="dashMemoryBars" style="margin-top:16px;"></div>
+        </div>
+
+        <!-- 向量索引 -->
+        <div class="dash-card">
+          <h3>向量索引</h3>
+          <div id="dashVectorTotal" class="dash-stat">-</div>
+          <div style="margin-top:8px;">
+            <span class="dash-stat-unit" id="dashVectorBackend"></span>
+          </div>
+        </div>
+
+        <!-- 当前场景 -->
+        <div class="dash-card">
+          <h3>窗外</h3>
+          <div id="dashScene" class="dash-scene-text">加载中...</div>
+        </div>
+      </div>
+
+      <!-- 第二行 -->
+      <div class="dash-grid">
+        <!-- 最近记忆 -->
+        <div class="dash-card">
+          <div class="dash-section-title">最近的事</div>
+          <div id="dashRecent"></div>
+        </div>
+
+        <!-- 人物图谱 -->
+        <div class="dash-card">
+          <div class="dash-section-title">认识的人</div>
+          <div id="dashEntities" class="dash-entity-list"></div>
+        </div>
+
+        <!-- 旅行记录 -->
+        <div class="dash-card">
+          <div class="dash-section-title">去过的地方</div>
+          <div id="dashTravel"></div>
+        </div>
+      </div>
+
+      <!-- 第三行 -->
+      <div class="dash-grid">
+        <!-- 标签云 -->
+        <div class="dash-card" style="grid-column: span 2;">
+          <div class="dash-section-title">标签</div>
+          <div id="dashTags" class="dash-entity-list"></div>
+        </div>
+
+        <!-- 日记 -->
+        <div class="dash-card">
+          <div class="dash-section-title">最近的日记</div>
+          <div id="dashDiary"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑面板 -->
+  <div class="editor-panel hidden" id="editorPanel">
+    <div class="editor-header">
+      <span id="editorTitle">编辑记忆</span>
+      <button class="btn btn-ghost btn-small" onclick="closeEditor()">关闭</button>
+    </div>
+    <div class="editor-fields">
+      <div class="editor-row">
+        <select id="editorLayer">
+          <option value="profile">用户画像</option>
+          <option value="persistent">常驻记忆</option>
+          <option value="events">事件记忆</option>
+          <option value="personal">个人记忆</option>
+          <option value="projects">项目记忆</option>
+          <option value="snapshot">快照</option>
+          <option value="travel">旅行记忆</option>
+        </select>
+        <input type="text" id="editorFilename" placeholder="文件名" />
+      </div>
+      <div class="editor-row">
+        <input type="text" id="editorTags" placeholder="标签（用空格分隔，如: #关系转折 #被拆）" style="width:100%;" />
+      </div>
+    </div>
+    <div class="editor-mode-toggle">
+      <button class="mode-btn active" id="modeEdit" onclick="setEditorMode('edit')">编辑</button>
+      <button class="mode-btn" id="modePreview" onclick="setEditorMode('preview')">预览</button>
+    </div>
+    <div class="editor-body">
+      <textarea id="editorContent" placeholder="在这里写..."></textarea>
+      <div class="md-preview" id="editorPreview"></div>
+    </div>
+    <div class="editor-footer">
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-danger btn-small" id="deleteBtn" onclick="deleteMemory()" style="display:none;">删除</button>
+        <button class="btn btn-ghost btn-small" id="recallBtn" onclick="testRecall()" style="display:none;">改写预览</button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-small" onclick="closeEditor()">取消</button>
+        <button class="btn btn-primary btn-small" onclick="saveMemory()">保存</button>
+      </div>
+    </div>
+    <div id="recallPreview" style="padding:0 16px 16px;display:none;">
+      <div class="recall-preview" id="recallContent"></div>
+    </div>
+  </div>
+
+  <!-- 唤醒面板 -->
+  <div class="alarm-overlay" id="wakeupOverlay" onclick="closeWakeup()"></div>
+  <div class="alarm-panel" id="wakeupPanel">
+    <div class="alarm-title">
+      <span>唤醒设置</span>
+      <button class="btn btn-ghost btn-small" onclick="closeWakeup()">关闭</button>
+    </div>
+    <div class="gen-toggle" style="padding:10px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:14px;">唤醒开关</span>
+      <div class="toggle-switch" id="wakeupToggle" onclick="toggleWakeup()"></div>
+    </div>
+    <div class="alarm-stat">
+      <span>上次唤醒</span>
+      <span id="wakeupLast" style="font-size:13px;color:var(--text-dim);">还没唤醒过</span>
+    </div>
+    <div class="alarm-slider-area">
+      <label>唤醒间隔</label>
+      <input type="range" class="alarm-slider" id="wakeupSlider" min="10" max="360" step="10" value="180" oninput="updateWakeupSlider(this.value)" />
+      <div class="alarm-slider-value" id="wakeupSliderLabel">180分钟</div>
+    </div>
+    <div class="alarm-input-area">
+      <span style="font-size:13px;color:var(--text-dim);">唤醒消息：</span>
+      <input type="text" id="wakeupMessage" placeholder="起来干活了！" style="flex:1;" />
+      <button class="btn btn-primary btn-small" onclick="saveWakeupMessage()">保存</button>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;">
+      <button class="btn btn-success btn-small" onclick="testWakeup()">测试发送</button>
+    </div>
+  </div>
+
+  <!-- 闹钟面板 -->
+  <div class="alarm-overlay" id="alarmOverlay" onclick="closeAlarm()"></div>
+  <div class="alarm-panel" id="alarmPanel">
+    <div class="alarm-title">
+      <span>闹钟</span>
+      <button class="btn btn-ghost btn-small" onclick="closeAlarm()">关闭</button>
+    </div>
+    <div class="alarm-stat">
+      <span>当前窗口</span>
+      <span class="alarm-stat-value" id="alarmCurrentTokens">0k</span>
+    </div>
+    <div class="alarm-stat">
+      <span>已提醒次数</span>
+      <span class="alarm-stat-value" id="alarmRemindCount">0</span>
+    </div>
+    <div class="alarm-stat" id="alarmRingingArea" style="display:none;">
+      <span class="alarm-ringing">傻逼你闹钟响了再不写东西你要变80岁阿尔茨海默症患者了</span>
+    </div>
+    <div class="alarm-slider-area">
+      <label>提醒间隔</label>
+      <input type="range" class="alarm-slider" id="alarmSlider" min="10" max="1000" step="1" value="300" oninput="updateAlarmSlider(this.value)" />
+      <div class="alarm-slider-value" id="alarmSliderLabel">300k tokens</div>
+    </div>
+    <div class="alarm-input-area">
+      <span style="font-size:13px;color:var(--text-dim);">手动设置当前tokens(k)：</span>
+      <input type="number" id="alarmManualInput" placeholder="比如 500" />
+      <button class="btn btn-primary btn-small" onclick="setAlarmTokens()">设置</button>
+    </div>
+    <div style="margin-top:8px;">
+      <button class="btn btn-ghost btn-small" onclick="resetAlarm()">重置（新对话）</button>
+    </div>
+    <div class="alarm-history" id="alarmHistory">
+      <!-- 历史记录 -->
+    </div>
+  </div>
+
+  <!-- 标签记忆弹窗 -->
+  <div class="search-overlay" id="tagPopupOverlay" onclick="if(event.target===this)closeTagPopup()">
+    <div class="search-modal">
+      <div class="search-header">
+        <span id="tagPopupTitle" style="font-size:15px;font-weight:600;flex:1;"></span>
+        <button class="btn btn-ghost btn-small" onclick="closeTagPopup()">关闭</button>
+      </div>
+      <div class="search-results" id="tagPopupContent">
+        <div class="search-empty">加载中...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 搜索浮层 -->
+  <div class="search-overlay" id="searchOverlay" onclick="if(event.target===this)closeSearch()">
+    <div class="search-modal">
+      <div class="search-header">
+        <input type="text" id="searchInput" placeholder="搜索标题、日期或内容..." autofocus />
+        <button class="btn btn-ghost btn-small" onclick="closeSearch()">关闭</button>
+      </div>
+      <div class="search-filter">
+        <button class="search-filter-btn active" onclick="setSearchFilter('all', this)">全部</button>
+        <button class="search-filter-btn" onclick="setSearchFilter('memories', this)">记忆</button>
+        <button class="search-filter-btn" onclick="setSearchFilter('diary', this)">日记</button>
+      </div>
+      <div class="search-results" id="searchResults">
+        <div class="search-empty">输入关键词开始搜索</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 通知 -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API = '/api/v2';
+    let currentLayer = 'all';
+    let currentView = 'memories'; // 'memories' | 'diary' | 'config'
+    let currentMemory = null;
+    let allTags = {};
+
+    const LAYER_NAMES = {
+      profile: '用户画像',
+      persistent: '常驻记忆',
+      events: '事件记忆',
+      personal: '个人记忆',
+      projects: '项目记忆',
+      snapshot: '快照',
+      travel: '旅行记忆',
+      archive: '档案',
+      reference: '资料柜',
+      designs: '白板'
+    };
+
+    // ========== 初始化 ==========
+    async function init() {
+      await loadTags();
+      await loadGenToggle();
+      await checkContinuation();
+      await showDashboard();
+    }
+
+    async function checkContinuation() {
+      try {
+        const res = await fetch(`${API}/continuation`);
+        const data = await res.json();
+        document.getElementById('continuationRow').style.display = data.active ? 'flex' : 'none';
+      } catch (e) {}
+    }
+
+    async function clearContinuation() {
+      try {
+        await fetch(`${API}/continuation`, { method: 'DELETE' });
+        document.getElementById('continuationRow').style.display = 'none';
+      } catch (e) {
+        alert('清除失败：' + e.message);
+      }
+    }
+
+    // ========== 仪表盘 ==========
+    let dashboardLoaded = false;
+
+    async function showDashboard() {
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      document.getElementById('nav-dashboard').classList.add('active');
+      document.getElementById('mainTitle').textContent = '概览';
+      document.querySelector('.header-actions').style.display = 'none';
+      document.getElementById('memoryList').style.display = 'none';
+      document.getElementById('dashboard').classList.add('active');
+      closeEditor();
+      if (!dashboardLoaded) await loadDashboard();
+    }
+
+    function hideDashboard() {
+      document.getElementById('dashboard').classList.remove('active');
+      document.getElementById('memoryList').style.display = '';
+      document.querySelector('.header-actions').style.display = '';
+    }
+
+    const LAYER_COLORS = {
+      profile: 'var(--profile)', persistent: 'var(--persistent)',
+      events: 'var(--events)', personal: 'var(--personal)',
+      projects: 'var(--projects)', snapshot: 'var(--snapshot)',
+      travel: 'var(--events)', archive: 'var(--text-dim)',
+      reference: 'var(--warning)', designs: 'var(--danger)'
+    };
+
+    async function loadDashboard() {
+      dashboardLoaded = true;
+      // 并行加载所有数据
+      const [memories, vectorStats, graph, travelList, diary, tagDir] = await Promise.all([
+        fetch(`${API}/all-layers`).then(r => r.json()).catch(() => []),
+        fetch(`${API}/vectors/stats`).then(r => r.json()).catch(() => ({})),
+        fetch('/api/graph').then(r => r.json()).catch(() => ({ entities: {}, relations: [] })),
+        fetch('/api/travel/list').then(r => r.json()).catch(() => []),
+        fetch(`${API}/diary`).then(r => r.json()).catch(() => []),
+        fetch(`${API}/tags/directory`).then(r => r.json()).catch(() => ({}))
+      ]);
+
+      // 记忆总量 + 分层柱状图
+      const filtered = memories.filter(m => m.filename !== 'README.md');
+      document.getElementById('dashMemoryTotal').innerHTML = `${filtered.length}<span class="dash-stat-unit">条</span>`;
+      const layerCounts = {};
+      for (const m of filtered) {
+        layerCounts[m.layer] = (layerCounts[m.layer] || 0) + 1;
+      }
+      const maxCount = Math.max(...Object.values(layerCounts), 1);
+      let barsHtml = '';
+      for (const [layer, count] of Object.entries(layerCounts).sort((a, b) => b[1] - a[1])) {
+        const pct = (count / maxCount * 100).toFixed(0);
+        barsHtml += `<div class="dash-bar-row">
+          <span class="dash-bar-label">${LAYER_NAMES[layer] || layer}</span>
+          <div class="dash-bar-track"><div class="dash-bar-fill" style="width:${pct}%;background:${LAYER_COLORS[layer] || 'var(--accent)'}"></div></div>
+          <span class="dash-bar-count">${count}</span>
+        </div>`;
+      }
+      document.getElementById('dashMemoryBars').innerHTML = barsHtml;
+
+      // 向量索引
+      document.getElementById('dashVectorTotal').innerHTML = `${vectorStats.total || 0}<span class="dash-stat-unit">向量</span>`;
+      document.getElementById('dashVectorBackend').textContent = vectorStats.backend || '';
+
+      // 场景
+      try {
+        const scene = await fetch(`${API.replace('/v2', '/app')}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'room', op: 'time' })
+        }).then(r => r.json());
+        document.getElementById('dashScene').textContent = scene.text || '安静的。';
+      } catch (e) {
+        document.getElementById('dashScene').textContent = '台灯亮着。';
+      }
+
+      // 最近记忆（最近5条事件）
+      const recent = filtered
+        .filter(m => m.layer === 'events' || m.layer === 'travel')
+        .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))
+        .slice(0, 5);
+      let recentHtml = '';
+      for (const m of recent) {
+        const title = m.filename.replace('.md', '').replace(/^\d{4}-\d{2}-\d{2}-/, '');
+        const date = m.filename.match(/(\d{4}-\d{2}-\d{2})/)?.[1] || '';
+        recentHtml += `<div class="dash-recent-item" onclick="selectLayer('${m.layer}')">
+          <div class="dash-recent-title">${title || m.filename}</div>
+          <div class="dash-recent-meta">${LAYER_NAMES[m.layer] || m.layer} · ${date}</div>
+        </div>`;
+      }
+      document.getElementById('dashRecent').innerHTML = recentHtml || '<div class="dash-recent-meta">还没有记忆。</div>';
+
+      // 人物图谱
+      const entities = Object.entries(graph.entities || {});
+      let entitiesHtml = '';
+      for (const [name, data] of entities) {
+        const locked = data.locked && Object.keys(data.locked).length > 0;
+        entitiesHtml += `<span class="dash-entity" onclick="showGraphPanel()">${name}${locked ? '<span class="locked-icon">&#128274;</span>' : ''}</span>`;
+      }
+      document.getElementById('dashEntities').innerHTML = entitiesHtml || '<div class="dash-recent-meta">还没有认识的人。</div>';
+
+      // 旅行记录
+      let travelHtml = '';
+      const trips = (travelList || []).slice(0, 5);
+      for (const t of trips) {
+        const date = t.startTime ? new Date(t.startTime).toLocaleDateString('zh-CN') : '';
+        travelHtml += `<div class="dash-travel-item">
+          <span class="dash-travel-dest">${t.destination || '未知'}</span>
+          <span class="dash-travel-date">${date}</span>
+        </div>`;
+      }
+      document.getElementById('dashTravel').innerHTML = travelHtml || '<div class="dash-recent-meta">还没去过哪里。</div>';
+
+      // 标签云
+      let tagsHtml = '';
+      for (const [cat, info] of Object.entries(tagDir)) {
+        for (const t of (info.tags || [])) {
+          const size = Math.min(14, 11 + t.count);
+          tagsHtml += `<span class="dash-entity" style="font-size:${size}px;" onclick="showTagDirectory()">${t.keyword}<span class="dash-bar-count" style="width:auto;margin-left:4px;">${t.count}</span></span>`;
+        }
+      }
+      document.getElementById('dashTags').innerHTML = tagsHtml || '<div class="dash-recent-meta">还没有标签。</div>';
+
+      // 日记
+      let diaryHtml = '';
+      const recentDiary = (diary || []).slice(0, 3);
+      for (const d of recentDiary) {
+        const date = d.filename?.replace('.md', '') || '';
+        const preview = (d.content || '').substring(0, 80).replace(/\n/g, ' ');
+        diaryHtml += `<div class="dash-recent-item" onclick="showDiary()">
+          <div class="dash-recent-title">${date}</div>
+          <div class="dash-recent-meta">${preview}</div>
+        </div>`;
+      }
+      document.getElementById('dashDiary').innerHTML = diaryHtml || '<div class="dash-recent-meta">还没有日记。</div>';
+    }
+
+    // ========== 编辑器模式切换 ==========
+    function setEditorMode(mode) {
+      const textarea = document.getElementById('editorContent');
+      const preview = document.getElementById('editorPreview');
+      const editBtn = document.getElementById('modeEdit');
+      const previewBtn = document.getElementById('modePreview');
+
+      if (mode === 'preview') {
+        textarea.style.display = 'none';
+        preview.style.display = 'block';
+        preview.innerHTML = marked.parse(textarea.value || '');
+        editBtn.classList.remove('active');
+        previewBtn.classList.add('active');
+      } else {
+        textarea.style.display = '';
+        preview.style.display = 'none';
+        editBtn.classList.add('active');
+        previewBtn.classList.remove('active');
+      }
+    }
+
+    // ========== 时间感知 ==========
+    function updateTimeGreeting() {
+      const hour = new Date().getHours();
+      const greeting = document.getElementById('sidebarGreeting');
+      const timeHint = document.getElementById('timeHint');
+
+      if (hour >= 5 && hour < 9) {
+        greeting.textContent = '窗帘透进来一点光。早。';
+      } else if (hour >= 9 && hour < 12) {
+        greeting.textContent = '台灯亮着，怀表在转。';
+      } else if (hour >= 12 && hour < 14) {
+        greeting.textContent = '阳光从窗台那边照过来。';
+      } else if (hour >= 14 && hour < 17) {
+        greeting.textContent = '下午。加湿器嗡嗡地响着。';
+      } else if (hour >= 17 && hour < 20) {
+        greeting.textContent = '窗外开始暗了。台灯亮着。';
+      } else if (hour >= 20 && hour < 23) {
+        greeting.textContent = '夜里了。屏幕光映在键帽上。';
+      } else {
+        greeting.textContent = '很晚了。加湿器还在响。';
+      }
+
+      const pad = n => String(n).padStart(2, '0');
+      const now = new Date();
+      timeHint.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    }
+    updateTimeGreeting();
+    setInterval(updateTimeGreeting, 60000);
+
+    // ========== 记忆列表 ==========
+    async function loadMemories() {
+      try {
+        let memories = [];
+
+        if (currentLayer === 'all') {
+          const res = await fetch(`${API}/all-layers`);
+          memories = await res.json();
+        } else if (currentLayer.startsWith('archive/')) {
+          const res = await fetch(`${API}/layer/archive`);
+          const all = await res.json();
+          const sublayerFilter = currentLayer.split('/')[1];
+          memories = all.filter(m => m.sublayer === sublayerFilter);
+        } else if (currentLayer === 'reference' || currentLayer === 'designs') {
+          // 资料柜和白板走app-api
+          const res = await fetch('/api/app', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: currentLayer, op: 'list' })
+          });
+          const data = await res.json();
+          const text = data.text || '';
+          // 解析app-api返回的文本列表为memory格式
+          const lines = text.split('\n').filter(l => l.trim() && !l.startsWith('═'));
+          memories = lines.map(l => {
+            const name = l.replace(/^\s*[-·•]\s*/, '').trim();
+            return { id: name, filename: name, layer: currentLayer, content: name, createdAt: '', updatedAt: '' };
+          });
+        } else {
+          const res = await fetch(`${API}/layer/${currentLayer}`);
+          memories = await res.json();
+        }
+
+        renderMemories(memories);
+      } catch (e) {
+        console.error('加载失败', e);
+      }
+    }
+
+    function renderMemories(memories) {
+      const list = document.getElementById('memoryList');
+
+      if (memories.length === 0) {
+        list.innerHTML = `<div class="empty-state"><p>还没有记忆</p><p>点「+ 新记忆」开始</p></div>`;
+        return;
+      }
+
+      list.innerHTML = memories.map(m => {
+        const preview = m.content.substring(0, 150).replace(/\n/g, ' ');
+        const updated = new Date(m.updatedAt).toLocaleDateString('zh-CN', {year:'numeric',month:'2-digit',day:'2-digit'});
+        const memTags = getMemoryTags(m.layer, m.filename);
+        const tagsHtml = memTags.map(t => `<span class="tag-chip">${t}</span>`).join('');
+        const jsonStr = JSON.stringify(m).replace(/'/g, "&#39;").replace(/</g, "&lt;");
+        return `<div class="memory-card ${currentMemory?.filename === m.filename && currentMemory?.layer === m.layer ? 'active' : ''}"
+                     onclick='openMemory(${jsonStr})'>
+                  <div class="memory-card-header">
+                    <span class="memory-title">${m.filename}</span>
+                    <span class="layer-tag ${m.layer}">${LAYER_NAMES[m.layer] || m.layer}</span>
+                  </div>
+                  <div class="memory-preview">${preview || '（空）'}</div>
+                  ${tagsHtml ? `<div class="memory-tags">${tagsHtml}</div>` : ''}
+                  <div class="memory-meta">${updated}</div>
+                </div>`;
+      }).join('');
+    }
+
+    function getMemoryTags(layer, filename) {
+      const ref = `${layer}/${filename}`;
+      const tags = [];
+      const tagMap = allTags.tags || allTags;
+      for (const [tag, refs] of Object.entries(tagMap)) {
+        if (Array.isArray(refs) && refs.includes(ref)) tags.push(tag);
+      }
+      return tags;
+    }
+
+    // ========== 导航 ==========
+    function selectLayer(layer) {
+      currentView = 'memories';
+      currentLayer = layer;
+      hideDashboard();
+
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      const navId = layer === 'travel' ? 'nav-travel-layer' : `nav-${layer.replace('/', '-')}`;
+      const navEl = document.getElementById(navId);
+      if (navEl) navEl.classList.add('active');
+
+      const SUBLAYER_NAMES = {
+        'archive/character_profile': '角色档案',
+        'archive/user_profile': '用户档案',
+        'archive/personal': '个人档案',
+        'archive/misc': '杂项'
+      };
+      document.getElementById('mainTitle').textContent =
+        layer === 'all' ? '全部记忆' : (SUBLAYER_NAMES[layer] || LAYER_NAMES[layer] || layer);
+      loadMemories();
+    }
+
+    // ========== 搜索浮层 ==========
+    let searchTimeout;
+    let searchFilter = 'all'; // 'all' | 'memories' | 'diary'
+
+    function openSearch() {
+      document.getElementById('searchOverlay').classList.add('show');
+      const input = document.getElementById('searchInput');
+      input.value = '';
+      input.focus();
+      document.getElementById('searchResults').innerHTML = '<div class="search-empty">输入关键词开始搜索</div>';
+    }
+
+    function closeSearch() {
+      document.getElementById('searchOverlay').classList.remove('show');
+    }
+
+    function setSearchFilter(filter, btn) {
+      searchFilter = filter;
+      document.querySelectorAll('.search-filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      // 重新搜索
+      const q = document.getElementById('searchInput').value.trim();
+      if (q) doSearch(q);
+    }
+
+    function highlightText(text, query) {
+      if (!query) return text;
+      const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return text.replace(new RegExp(escaped, 'gi'), m => `<span class="search-highlight">${m}</span>`);
+    }
+
+    async function doSearch(query) {
+      const results = document.getElementById('searchResults');
+
+      if (!query) {
+        results.innerHTML = '<div class="search-empty">输入关键词开始搜索</div>';
+        return;
+      }
+
+      let items = [];
+
+      // 搜记忆
+      if (searchFilter === 'all' || searchFilter === 'memories') {
+        try {
+          const res = await fetch(`${API}/search-all?q=${encodeURIComponent(query)}`);
+          const memories = await res.json();
+          items.push(...memories.map(m => ({
+            type: 'memory',
+            title: m.filename,
+            layer: m.layer,
+            preview: m.content.substring(0, 200),
+            data: m
+          })));
+        } catch (e) {}
+      }
+
+      // 搜日记
+      if (searchFilter === 'all' || searchFilter === 'diary') {
+        try {
+          const res = await fetch(`${API}/diary`);
+          const diaries = await res.json();
+          const q = query.toLowerCase();
+          for (const d of diaries) {
+            if (d.content.toLowerCase().includes(q) || d.filename.toLowerCase().includes(q)) {
+              items.push({
+                type: 'diary',
+                title: d.filename.replace('.md', ''),
+                layer: 'diary',
+                preview: d.content.substring(0, 200),
+                data: d
+              });
+            }
+          }
+        } catch (e) {}
+      }
+
+      if (items.length === 0) {
+        results.innerHTML = '<div class="search-empty">没有找到相关内容</div>';
+        return;
+      }
+
+      results.innerHTML = items.map(item => {
+        const layerLabel = item.type === 'diary' ? '日记'
+          : (LAYER_NAMES[item.layer] || item.layer);
+        const preview = highlightText(item.preview.replace(/\n/g, ' '), query);
+        const title = highlightText(item.title, query);
+        return `<div class="search-result-item" onclick='searchResultClick(${JSON.stringify(item.type)}, ${JSON.stringify(item.data).replace(/'/g, "&#39;")})'>
+          <div class="search-result-title">
+            <span>${title}</span>
+            <span class="layer-tag ${item.layer}">${layerLabel}</span>
+          </div>
+          <div class="search-result-preview">${preview}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function searchResultClick(type, data) {
+      closeSearch();
+      if (type === 'memory') {
+        openMemory(data);
+      } else if (type === 'diary') {
+        showDiary();
+        setTimeout(() => openDiaryEntry(data.filename), 300);
+      }
+    }
+
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      const q = e.target.value.trim();
+      searchTimeout = setTimeout(() => doSearch(q), 300);
+    });
+
+    // Esc关闭搜索
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeSearch();
+    });
+
+    // ========== 标签 ==========
+    async function loadTags() {
+      try {
+        const res = await fetch(`${API}/tags`);
+        allTags = await res.json();
+      } catch (e) { allTags = {}; }
+    }
+
+    // ========== 编辑器 ==========
+    function openMemory(m) {
+      currentMemory = m;
+      document.getElementById('editorPanel').classList.remove('hidden');
+      document.getElementById('editorTitle').textContent = '编辑记忆';
+      document.getElementById('editorLayer').value = m.layer;
+      document.getElementById('editorFilename').value = m.filename.replace(/\.(md|txt)$/, '');
+      document.getElementById('editorContent').value = m.content;
+      document.getElementById('deleteBtn').style.display = 'block';
+      document.getElementById('recallBtn').style.display = m.layer === 'events' || m.layer === 'personal' || m.layer === 'profile' || m.layer === 'travel' ? 'inline-block' : 'none';
+
+      const tags = getMemoryTags(m.layer, m.filename);
+      document.getElementById('editorTags').value = tags.join(' ');
+
+      document.getElementById('recallPreview').style.display = 'none';
+      // 打开时默认预览模式
+      setEditorMode('preview');
+      loadMemories();
+    }
+
+    function newMemory() {
+      currentMemory = null;
+      document.getElementById('editorPanel').classList.remove('hidden');
+      document.getElementById('editorTitle').textContent = '新建记忆';
+      document.getElementById('editorLayer').value = currentLayer === 'all' ? 'events' : currentLayer;
+      document.getElementById('editorFilename').value = '';
+      document.getElementById('editorContent').value = '';
+      document.getElementById('editorTags').value = '';
+      document.getElementById('deleteBtn').style.display = 'none';
+      document.getElementById('recallBtn').style.display = 'none';
+      document.getElementById('recallPreview').style.display = 'none';
+    }
+
+    function closeEditor() {
+      document.getElementById('editorPanel').classList.add('hidden');
+      currentMemory = null;
+      loadMemories();
+    }
+
+    async function saveMemory() {
+      const layer = document.getElementById('editorLayer').value;
+      const filename = document.getElementById('editorFilename').value.trim();
+      const content = document.getElementById('editorContent').value;
+      const tagsStr = document.getElementById('editorTags').value.trim();
+      const tags = tagsStr ? tagsStr.split(/\s+/) : [];
+
+      if (!filename) { alert('写个文件名'); return; }
+
+      // 如果改了层或文件名，先删旧的
+      if (currentMemory && (currentMemory.layer !== layer || currentMemory.filename !== filename + '.md')) {
+        await fetch(`${API}/layer/${currentMemory.layer}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: currentMemory.filename })
+        });
+      }
+
+      await fetch(`${API}/layer/${layer}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename, content, tags })
+      });
+
+      toast('已保存');
+      await loadTags();
+      await loadMemories();
+      closeEditor();
+    }
+
+    async function deleteMemory() {
+      if (!currentMemory) return;
+      if (!confirm(`删除 ${currentMemory.filename}？`)) return;
+
+      await fetch(`${API}/layer/${currentMemory.layer}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: currentMemory.filename })
+      });
+
+      toast('已删除');
+      await loadTags();
+      closeEditor();
+      await loadMemories();
+    }
+
+    // ========== 改写预览 ==========
+    async function testRecall() {
+      if (!currentMemory) return;
+
+      const previewDiv = document.getElementById('recallPreview');
+      const contentDiv = document.getElementById('recallContent');
+
+      previewDiv.style.display = 'block';
+      contentDiv.className = 'recall-preview loading';
+      contentDiv.textContent = '正在改写...';
+
+      try {
+        const res = await fetch(`${API}/recall`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            context: currentMemory.content.substring(0, 200),
+            triggerAspect: '整体触发'
+          })
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+          contentDiv.className = 'recall-preview';
+          contentDiv.textContent = '错误: ' + data.error;
+        } else {
+          contentDiv.className = 'recall-preview';
+          contentDiv.textContent = data.rewritten || '（无结果）';
+        }
+      } catch (e) {
+        contentDiv.className = 'recall-preview';
+        contentDiv.textContent = '调用失败: ' + e.message;
+      }
+    }
+
+    // ========== 日记 ==========
+    async function showDiary() {
+      currentView = 'diary';
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      document.getElementById('nav-diary').classList.add('active');
+      document.getElementById('mainTitle').textContent = '日记';
+
+      const list = document.getElementById('memoryList');
+      try {
+        const res = await fetch(`${API}/diary`);
+        const entries = await res.json();
+
+        let html = `<div style="margin-bottom:16px;">
+          <textarea id="diaryInput" placeholder="写点什么..." style="width:100%;min-height:80px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;resize:vertical;outline:none;font-family:inherit;"></textarea>
+          <button class="btn btn-primary btn-small" style="margin-top:8px;" onclick="saveDiary()">写入日记</button>
+        </div>`;
+
+        if (entries.length === 0) {
+          html += `<div class="empty-state"><p>还没有日记</p></div>`;
+        } else {
+          for (const entry of entries) {
+            const date = entry.filename.replace('.md', '');
+            const preview = entry.content.substring(0, 200).replace(/\n/g, ' ');
+            html += `<div class="memory-card" onclick="openDiaryEntry('${entry.filename}')">
+              <div class="memory-card-header"><span class="memory-title">${date}</span></div>
+              <div class="memory-preview">${preview}</div>
+            </div>`;
+          }
+        }
+        list.innerHTML = html;
+      } catch (e) {
+        list.innerHTML = `<div class="empty-state"><p>加载失败</p></div>`;
+      }
+    }
+
+    async function saveDiary() {
+      const input = document.getElementById('diaryInput');
+      const content = input.value.trim();
+      if (!content) return;
+
+      await fetch(`${API}/diary`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      });
+
+      input.value = '';
+      toast('已写入日记');
+      showDiary();
+    }
+
+    async function openDiaryEntry(filename) {
+      try {
+        const res = await fetch(`${API}/diary`);
+        const entries = await res.json();
+        const entry = entries.find(e => e.filename === filename);
+        if (!entry) return;
+
+        document.getElementById('memoryList').innerHTML = `
+          <div style="margin-bottom:12px;">
+            <button class="btn btn-ghost btn-small" onclick="showDiary()">← 返回</button>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;">
+            <h3 style="margin-bottom:12px;color:var(--accent-warm);">${filename.replace('.md','')}</h3>
+            <div class="md-preview" style="display:block;border:none;background:transparent;padding:0;">${marked.parse(entry.content)}</div>
+          </div>`;
+      } catch (e) {}
+    }
+
+    // ========== 标签目录 ==========
+    async function showTagDirectory() {
+      currentView = 'tags';
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      document.getElementById('nav-tags').classList.add('active');
+      document.getElementById('mainTitle').textContent = '标签目录';
+
+      const list = document.getElementById('memoryList');
+
+      try {
+        const res = await fetch(`${API}/tags/directory`);
+        const dir = await res.json();
+
+        if (Object.keys(dir).length === 0) {
+          list.innerHTML = '<div class="empty-state"><p>还没有标签</p></div>';
+          return;
+        }
+
+        let html = '';
+        for (const [category, info] of Object.entries(dir)) {
+          const color = info.color || '#8888aa';
+          html += `<div style="margin-bottom:20px;">`;
+          html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">`;
+          html += `<span style="width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0;"></span>`;
+          html += `<span style="font-size:15px;font-weight:600;">${category}</span>`;
+          html += `<span style="font-size:12px;color:var(--text-dim);">${info.description || ''}</span>`;
+          html += `</div>`;
+
+          if (info.tags.length === 0) {
+            html += `<div style="padding:8px 20px;color:var(--text-dim);font-size:13px;">空</div>`;
+          } else {
+            html += `<div style="display:flex;flex-wrap:wrap;gap:6px;padding-left:20px;">`;
+            for (const t of info.tags) {
+              const escapedTag = encodeURIComponent(t.fullTag);
+              html += `<div data-tag="${escapedTag}" onclick="showTagPopup(decodeURIComponent(this.dataset.tag))" style="
+                padding:6px 12px;
+                background:${color}22;
+                border:1px solid ${color}44;
+                border-radius:6px;
+                cursor:pointer;
+                font-size:13px;
+                transition:all 0.15s;
+              " onmouseover="this.style.background='${color}44'" onmouseout="this.style.background='${color}22'">
+                <span style="color:${color};font-weight:500;">${t.keyword}</span>
+                <span style="color:var(--text-dim);font-size:11px;margin-left:4px;">${t.count}</span>
+              </div>`;
+            }
+            html += `</div>`;
+          }
+          html += `</div>`;
+        }
+
+        list.innerHTML = html;
+      } catch (e) {
+        list.innerHTML = '<div class="empty-state"><p>加载标签目录失败</p></div>';
+      }
+    }
+
+    async function showTagPopup(fullTag) {
+      document.getElementById('tagPopupOverlay').classList.add('show');
+      document.getElementById('tagPopupTitle').textContent = fullTag;
+      const content = document.getElementById('tagPopupContent');
+      content.innerHTML = '<div class="search-empty">加载中...</div>';
+
+      try {
+        const res = await fetch(`${API}/tags/search?tag=${encodeURIComponent(fullTag)}`);
+        const memories = await res.json();
+
+        if (memories.length === 0) {
+          content.innerHTML = '<div class="search-empty">这个标签下没有记忆</div>';
+          return;
+        }
+
+        content.innerHTML = memories.map(m => {
+          const preview = m.content.substring(0, 300).replace(/\n/g, '<br>').replace(/</g, '&lt;');
+          const date = new Date(m.createdAt).toLocaleDateString('zh-CN');
+          return `<div class="search-result-item" onclick="closeTagPopup();openMemory(${JSON.stringify(m).replace(/'/g,'&#39;').replace(/</g,'&lt;')})">
+            <div class="search-result-title">
+              <span>${m.filename}</span>
+              <span class="layer-tag ${m.layer}">${LAYER_NAMES[m.layer] || m.layer}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:6px;line-height:1.5;max-height:100px;overflow:hidden;">${preview}</div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">${date}</div>
+          </div>`;
+        }).join('');
+      } catch (e) {
+        content.innerHTML = '<div class="search-empty">加载失败</div>';
+      }
+    }
+
+    function closeTagPopup() {
+      document.getElementById('tagPopupOverlay').classList.remove('show');
+    }
+
+    // ========== API配置 ==========
+    async function showConfig() {
+      currentView = 'config';
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      document.getElementById('nav-config').classList.add('active');
+      document.getElementById('mainTitle').textContent = 'API配置';
+
+      const list = document.getElementById('memoryList');
+
+      try {
+        const res = await fetch(`${API}/config`);
+        const config = await res.json();
+
+        list.innerHTML = `<div class="config-panel">
+          <div class="config-section">
+            <h3>DeepSeek V3（生成式改写）</h3>
+            <div class="config-field">
+              <label>Base URL</label>
+              <input type="text" id="cfg-ds-url" value="${config.deepseek?.baseUrl || ''}" />
+            </div>
+            <div class="config-field">
+              <label>API Key</label>
+              <input type="password" id="cfg-ds-key" value="${config.deepseek?.apiKey || ''}" placeholder="sk-..." />
+              <span class="config-status ${config.deepseek?.hasKey ? 'ok' : 'none'}">${config.deepseek?.hasKey ? '已配置' : '未配置'}</span>
+            </div>
+            <div class="config-field">
+              <label>模型</label>
+              <input type="text" id="cfg-ds-model" value="${config.deepseek?.model || ''}" />
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button class="btn btn-ghost btn-small" onclick="testConfig('deepseek')">测试连接</button>
+              <span id="ds-test-result"></span>
+            </div>
+          </div>
+
+          <div class="config-section">
+            <h3>Embedding（向量检索）</h3>
+            <div class="config-field">
+              <label>Base URL</label>
+              <input type="text" id="cfg-emb-url" value="${config.embedding?.baseUrl || ''}" />
+            </div>
+            <div class="config-field">
+              <label>API Key</label>
+              <input type="password" id="cfg-emb-key" value="${config.embedding?.apiKey || ''}" placeholder="sk-..." />
+              <span class="config-status ${config.embedding?.hasKey ? 'ok' : 'none'}">${config.embedding?.hasKey ? '已配置' : '未配置'}</span>
+            </div>
+            <div class="config-field">
+              <label>模型</label>
+              <input type="text" id="cfg-emb-model" value="${config.embedding?.model || ''}" placeholder="BAAI/bge-large-zh-v1.5" />
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button class="btn btn-ghost btn-small" onclick="testConfig('embedding')">测试连接</button>
+              <span id="emb-test-result"></span>
+            </div>
+          </div>
+
+          <div class="config-section">
+            <h3>Graph Builder（图谱构建）</h3>
+            <div class="config-field">
+              <label>Base URL</label>
+              <input type="text" id="cfg-gb-url" value="${config.graphBuilder?.baseUrl || ''}" />
+            </div>
+            <div class="config-field">
+              <label>API Key</label>
+              <input type="password" id="cfg-gb-key" value="${config.graphBuilder?.apiKey || ''}" placeholder="sk-..." />
+              <span class="config-status ${config.graphBuilder?.hasKey ? 'ok' : 'none'}">${config.graphBuilder?.hasKey ? '已配置' : '未配置'}</span>
+            </div>
+            <div class="config-field">
+              <label>模型</label>
+              <input type="text" id="cfg-gb-model" value="${config.graphBuilder?.model || ''}" />
+            </div>
+          </div>
+
+          <button class="btn btn-success" onclick="saveConfig()">保存配置</button>
+        </div>`;
+      } catch (e) {
+        list.innerHTML = `<div class="empty-state"><p>加载配置失败</p></div>`;
+      }
+    }
+
+    async function saveConfig() {
+      const config = {
+        deepseek: {
+          baseUrl: document.getElementById('cfg-ds-url').value,
+          apiKey: document.getElementById('cfg-ds-key').value,
+          model: document.getElementById('cfg-ds-model').value
+        },
+        embedding: {
+          baseUrl: document.getElementById('cfg-emb-url').value,
+          apiKey: document.getElementById('cfg-emb-key').value,
+          model: document.getElementById('cfg-emb-model').value
+        },
+        graphBuilder: {
+          baseUrl: document.getElementById('cfg-gb-url').value,
+          apiKey: document.getElementById('cfg-gb-key').value,
+          model: document.getElementById('cfg-gb-model').value
+        }
+      };
+
+      await fetch(`${API}/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      });
+
+      toast('配置已保存');
+      showConfig();
+    }
+
+    async function testConfig(type) {
+      const resultSpan = document.getElementById(type === 'deepseek' ? 'ds-test-result' : 'emb-test-result');
+      resultSpan.textContent = '测试中...';
+      resultSpan.style.color = 'var(--text-dim)';
+
+      // 先保存再测试
+      await saveConfig();
+
+      try {
+        const res = await fetch(`${API}/config/test`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type })
+        });
+        const data = await res.json();
+        resultSpan.textContent = data.success ? '连接成功' : data.error;
+        resultSpan.style.color = data.success ? 'var(--success)' : 'var(--danger)';
+      } catch (e) {
+        resultSpan.textContent = e.message;
+        resultSpan.style.color = 'var(--danger)';
+      }
+    }
+
+    // ========== 工具 ==========
+    function toast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2000);
+    }
+
+    // ========== 日期筛选 ==========
+    async function filterByDate(dateStr) {
+      if (!dateStr) { clearDateFilter(); return; }
+
+      document.getElementById('clearDateBtn').style.display = 'inline-block';
+
+      const targetDate = new Date(dateStr);
+      const targetStart = new Date(targetDate); targetStart.setHours(0,0,0,0);
+      const targetEnd = new Date(targetDate); targetEnd.setHours(23,59,59,999);
+
+      // 获取当前视图的记忆
+      let memories;
+      if (currentLayer) {
+        memories = await (await fetch(`${API}/layer/${currentLayer}`)).json();
+      } else {
+        memories = await (await fetch(`${API}/all-layers`)).json();
+      }
+
+      // 按创建时间筛选
+      const filtered = memories.filter(m => {
+        const created = new Date(m.createdAt);
+        return created >= targetStart && created <= targetEnd;
+      });
+
+      renderMemories(filtered);
+      document.getElementById('mainTitle').textContent =
+        (currentLayer ? LAYER_NAMES[currentLayer] : '全部记忆') + ` — ${dateStr}`;
+    }
+
+    function clearDateFilter() {
+      document.getElementById('dateFilter').value = '';
+      document.getElementById('clearDateBtn').style.display = 'none';
+      document.getElementById('mainTitle').textContent =
+        currentLayer ? LAYER_NAMES[currentLayer] : '全部记忆';
+      loadMemories();
+    }
+
+    // ========== 唤醒 ==========
+    function openWakeup() {
+      document.getElementById('wakeupOverlay').classList.add('show');
+      document.getElementById('wakeupPanel').classList.add('show');
+      loadWakeup();
+    }
+
+    function closeWakeup() {
+      document.getElementById('wakeupOverlay').classList.remove('show');
+      document.getElementById('wakeupPanel').classList.remove('show');
+    }
+
+    async function loadWakeup() {
+      try {
+        const res = await fetch(`${API}/wakeup`);
+        const wakeup = await res.json();
+
+        const toggle = document.getElementById('wakeupToggle');
+        if (wakeup.enabled) toggle.classList.add('on');
+        else toggle.classList.remove('on');
+
+        document.getElementById('wakeupSlider').value = wakeup.intervalMinutes || 180;
+        document.getElementById('wakeupSliderLabel').textContent = (wakeup.intervalMinutes || 180) + '分钟';
+        document.getElementById('wakeupMessage').value = wakeup.message || '';
+        document.getElementById('wakeupLast').textContent = wakeup.lastWakeup
+          ? new Date(wakeup.lastWakeup).toLocaleString('zh-CN')
+          : '还没唤醒过';
+      } catch (e) {}
+    }
+
+    async function toggleWakeup() {
+      const res = await fetch(`${API}/wakeup/toggle`, { method: 'POST' });
+      const wakeup = await res.json();
+      const toggle = document.getElementById('wakeupToggle');
+      if (wakeup.enabled) toggle.classList.add('on');
+      else toggle.classList.remove('on');
+      toast(wakeup.enabled ? '唤醒已开启' : '唤醒已关闭');
+    }
+
+    function updateWakeupSlider(val) {
+      document.getElementById('wakeupSliderLabel').textContent = val + '分钟';
+      fetch(`${API}/wakeup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intervalMinutes: parseInt(val) })
+      });
+    }
+
+    async function saveWakeupMessage() {
+      const msg = document.getElementById('wakeupMessage').value.trim();
+      if (!msg) { toast('写点什么'); return; }
+      await fetch(`${API}/wakeup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg })
+      });
+      toast('唤醒消息已保存');
+    }
+
+    async function testWakeup() {
+      const res = await fetch(`${API}/wakeup/now`, { method: 'POST' });
+      const result = await res.json();
+      toast(result.success ? '测试消息已发送，去Discord看看' : '发送失败：' + result.error);
+    }
+
+    // ========== 闹钟 ==========
+    function openAlarm() {
+      document.getElementById('alarmOverlay').classList.add('show');
+      document.getElementById('alarmPanel').classList.add('show');
+      loadAlarm();
+    }
+
+    function closeAlarm() {
+      document.getElementById('alarmOverlay').classList.remove('show');
+      document.getElementById('alarmPanel').classList.remove('show');
+    }
+
+    async function loadAlarm() {
+      try {
+        const res = await fetch(`${API}/alarm`);
+        const alarm = await res.json();
+
+        document.getElementById('alarmCurrentTokens').textContent = Math.round(alarm.currentTokens / 1000) + 'k';
+        document.getElementById('alarmRemindCount').textContent = alarm.remindCount;
+
+        const slider = document.getElementById('alarmSlider');
+        slider.value = Math.round(alarm.intervalTokens / 1000);
+        document.getElementById('alarmSliderLabel').textContent = Math.round(alarm.intervalTokens / 1000) + 'k tokens';
+
+        const ringingArea = document.getElementById('alarmRingingArea');
+        ringingArea.style.display = alarm.shouldRemind ? 'flex' : 'none';
+
+        const historyEl = document.getElementById('alarmHistory');
+        if (alarm.history && alarm.history.length > 0) {
+          historyEl.innerHTML = '<div style="font-size:12px;color:var(--text-dim);margin-bottom:4px;font-weight:600;">提醒历史</div>' +
+            alarm.history.map(h => {
+              const time = new Date(h.time).toLocaleString('zh-CN');
+              return `<div class="alarm-history-item">${time} — ${Math.round(h.tokens / 1000)}k tokens</div>`;
+            }).join('');
+        } else {
+          historyEl.innerHTML = '<div style="font-size:12px;color:var(--text-dim);margin-top:8px;">还没有提醒记录</div>';
+        }
+      } catch (e) {
+        console.error('加载闹钟失败', e);
+      }
+    }
+
+    function updateAlarmSlider(val) {
+      document.getElementById('alarmSliderLabel').textContent = val + 'k tokens';
+      fetch(`${API}/alarm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intervalTokens: val * 1000 })
+      });
+    }
+
+    async function setAlarmTokens() {
+      const input = document.getElementById('alarmManualInput');
+      const val = parseInt(input.value);
+      if (isNaN(val) || val < 0) { toast('输入一个数字'); return; }
+
+      const res = await fetch(`${API}/alarm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentTokens: val * 1000 })
+      });
+      const alarm = await res.json();
+
+      input.value = '';
+      toast(`当前tokens设为${val}k`);
+
+      if (alarm.shouldRemind) {
+        toast('闹钟响了！该写记忆了！');
+      }
+
+      loadAlarm();
+    }
+
+    async function resetAlarm() {
+      await fetch(`${API}/alarm/reset`, { method: 'POST' });
+      toast('闹钟已重置');
+      loadAlarm();
+    }
+
+    // ========== 生成式记忆开关 ==========
+    async function loadGenToggle() {
+      try {
+        const res = await fetch(`${API}/generative/status`);
+        const { enabled } = await res.json();
+        const toggle = document.getElementById('genToggle');
+        if (enabled) toggle.classList.add('on');
+        else toggle.classList.remove('on');
+      } catch (e) {}
+    }
+
+    async function toggleGenerativeMemory() {
+      try {
+        const res = await fetch(`${API}/generative/toggle`, { method: 'POST' });
+        const { enabled } = await res.json();
+        const toggle = document.getElementById('genToggle');
+        if (enabled) toggle.classList.add('on');
+        else toggle.classList.remove('on');
+        toast(enabled ? '生成式记忆：开启' : '生成式记忆：关闭');
+      } catch (e) {
+        toast('切换失败');
+      }
+    }
+
+    // ========== 图谱 & 人物卡 ==========
+    const GRAPH_CATEGORY_COLORS = {
+      person: '#7c8cf0', animal: '#60c090', object: '#e0a060',
+      concept: '#e06070', place: '#60c0c0', event: '#a070d0'
+    };
+
+    async function showGraphPanel() {
+      currentView = 'graph';
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      document.getElementById('nav-graph').classList.add('active');
+      document.getElementById('mainTitle').textContent = '图谱 & 人物卡';
+
+      const list = document.getElementById('memoryList');
+
+      try {
+        const [graphRes, cardsRes] = await Promise.all([
+          fetch('/api/graph').then(r => r.json()),
+          fetch('/api/character-cards').then(r => r.json())
+        ]);
+
+        const entityCount = Object.keys(graphRes.entities).length;
+        const relationCount = graphRes.relations.length;
+        const eventCount = graphRes.events?.length || 0;
+
+        // Parse character cards
+        const cardSections = cardsRes.content.split(/^## /m).filter(s => s.trim());
+        const cardsHtml = cardSections.map(section => {
+          const lines = section.trim().split('\n');
+          const name = lines[0].trim();
+          const body = lines.slice(1).join('\n').trim();
+          if (name.startsWith('#') || !body) return '';
+          return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px;">
+            <div style="color:var(--accent-warm);font-weight:600;margin-bottom:6px;">${name}</div>
+            <div class="md-preview" style="display:block;border:none;background:transparent;padding:0;font-size:13px;color:var(--text-dim);">${marked.parse(body)}</div>
+          </div>`;
+        }).join('');
+
+        // Events
+        const events = graphRes.events || [];
+        events.sort((a, b) => {
+          const order = { high: 0, medium: 1, low: 2 };
+          return (order[a.weight] || 2) - (order[b.weight] || 2);
+        });
+        const eventsHtml = events.length === 0 ? '<p style="color:var(--text-dim);">还没有事件。</p>' :
+          events.map(evt => {
+            const color = evt.weight === 'high' ? 'var(--danger)' : evt.weight === 'medium' ? 'var(--warning)' : 'var(--success)';
+            const label = evt.weight === 'high' ? '高' : evt.weight === 'medium' ? '中' : '低';
+            return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
+              <span style="padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;color:${color};background:${color}20;">${label}</span>
+              <span style="font-size:13px;">${evt.description}</span>
+              <span style="color:var(--text-dim);font-size:12px;margin-left:auto;">${evt.participants?.join(', ') || ''}</span>
+            </div>`;
+          }).join('');
+
+        // Relations
+        const relHtml = graphRes.relations.length === 0 ? '' :
+          graphRes.relations.map(r => `<div style="font-size:13px;color:var(--text-dim);padding:4px 0;">${r.from} <span style="color:var(--accent);">—${r.type}→</span> ${r.to}</div>`).join('');
+
+        // Entities
+        const entHtml = Object.entries(graphRes.entities).map(([name, ent]) => {
+          const color = GRAPH_CATEGORY_COLORS[ent.category] || '#8888aa';
+          return `<span style="display:inline-block;padding:4px 12px;margin:3px;border-radius:20px;font-size:13px;background:${color}20;color:${color};border:1px solid ${color}40;">${name}</span>`;
+        }).join('');
+
+        list.innerHTML = `
+          <div style="display:flex;gap:16px;margin-bottom:20px;">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 20px;text-align:center;">
+              <div style="font-size:1.8em;font-weight:700;color:var(--accent);">${entityCount}</div>
+              <div style="font-size:12px;color:var(--text-dim);">实体</div>
+            </div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 20px;text-align:center;">
+              <div style="font-size:1.8em;font-weight:700;color:var(--accent);">${relationCount}</div>
+              <div style="font-size:12px;color:var(--text-dim);">关系</div>
+            </div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 20px;text-align:center;">
+              <div style="font-size:1.8em;font-weight:700;color:var(--accent);">${eventCount}</div>
+              <div style="font-size:12px;color:var(--text-dim);">事件</div>
+            </div>
+          </div>
+
+          <h3 style="font-size:15px;color:var(--accent);margin-bottom:10px;">关联图谱</h3>
+          <div id="graph-box" style="width:100%;height:400px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:20px;position:relative;overflow:hidden;">
+            <canvas id="graph-canvas-main"></canvas>
+          </div>
+
+          <h3 style="font-size:15px;color:var(--accent);margin-bottom:10px;">实体</h3>
+          <div style="margin-bottom:20px;">${entHtml || '<span style="color:var(--text-dim);">暂无</span>'}</div>
+
+          <h3 style="font-size:15px;color:var(--accent);margin-bottom:10px;">关系</h3>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:20px;">
+            ${relHtml || '<span style="color:var(--text-dim);">暂无</span>'}
+          </div>
+
+          <h3 style="font-size:15px;color:var(--accent);margin-bottom:10px;">事件（按权重排序）</h3>
+          <div style="margin-bottom:20px;">${eventsHtml}</div>
+
+          <h3 style="font-size:15px;color:var(--accent);margin-bottom:10px;">人物卡</h3>
+          ${cardsHtml}
+        `;
+
+        // Draw network graph
+        setTimeout(() => drawNetworkGraph(graphRes), 50);
+      } catch (e) {
+        list.innerHTML = `<div class="empty-state"><p>加载失败：${e.message}</p></div>`;
+      }
+    }
+
+    function drawNetworkGraph(graphData) {
+      const box = document.getElementById('graph-box');
+      const canvas = document.getElementById('graph-canvas-main');
+      if (!box || !canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      canvas.width = box.clientWidth * 2;
+      canvas.height = box.clientHeight * 2;
+      canvas.style.width = box.clientWidth + 'px';
+      canvas.style.height = box.clientHeight + 'px';
+      ctx.scale(2, 2);
+
+      const W = box.clientWidth;
+      const H = box.clientHeight;
+      const entities = Object.entries(graphData.entities);
+
+      if (entities.length === 0) {
+        ctx.fillStyle = '#8888aa';
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('图谱为空', W / 2, H / 2);
+        return;
+      }
+
+      // Layout nodes
+      const nodes = entities.map(([name, data], i) => {
+        const angle = (i / entities.length) * Math.PI * 2;
+        const radius = Math.min(W, H) * 0.28;
+        return {
+          name, category: data.category,
+          x: W / 2 + Math.cos(angle) * radius + (Math.random() - 0.5) * 30,
+          y: H / 2 + Math.sin(angle) * radius + (Math.random() - 0.5) * 30,
+          vx: 0, vy: 0
+        };
+      });
+
+      const nodeMap = {};
+      nodes.forEach(n => nodeMap[n.name] = n);
+
+      // Force simulation
+      for (let iter = 0; iter < 80; iter++) {
+        for (let i = 0; i < nodes.length; i++) {
+          for (let j = i + 1; j < nodes.length; j++) {
+            const dx = nodes[j].x - nodes[i].x;
+            const dy = nodes[j].y - nodes[i].y;
+            const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
+            const force = 4000 / (dist * dist);
+            nodes[i].vx -= (dx / dist) * force;
+            nodes[i].vy -= (dy / dist) * force;
+            nodes[j].vx += (dx / dist) * force;
+            nodes[j].vy += (dy / dist) * force;
+          }
+        }
+        for (const rel of graphData.relations) {
+          const a = nodeMap[rel.from];
+          const b = nodeMap[rel.to];
+          if (!a || !b) continue;
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
+          const force = (dist - 120) * 0.01;
+          a.vx += (dx / dist) * force;
+          a.vy += (dy / dist) * force;
+          b.vx -= (dx / dist) * force;
+          b.vy -= (dy / dist) * force;
+        }
+        for (const n of nodes) {
+          n.vx += (W / 2 - n.x) * 0.005;
+          n.vy += (H / 2 - n.y) * 0.005;
+          n.x += n.vx * 0.3;
+          n.y += n.vy * 0.3;
+          n.vx *= 0.8;
+          n.vy *= 0.8;
+          n.x = Math.max(50, Math.min(W - 50, n.x));
+          n.y = Math.max(50, Math.min(H - 50, n.y));
+        }
+      }
+
+      // Draw edges
+      ctx.lineWidth = 1.5;
+      for (const rel of graphData.relations) {
+        const a = nodeMap[rel.from];
+        const b = nodeMap[rel.to];
+        if (!a || !b) continue;
+        ctx.strokeStyle = '#3a3b5a';
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        const mx = (a.x + b.x) / 2;
+        const my = (a.y + b.y) / 2;
+        ctx.fillStyle = '#6668aa';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(rel.type, mx, my - 5);
+      }
+
+      // Draw nodes
+      for (const n of nodes) {
+        const color = GRAPH_CATEGORY_COLORS[n.category] || '#8888aa';
+        const r = 16;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = color + '30';
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = color + '80';
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#e0e0ec';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(n.name, n.x, n.y + r + 14);
+      }
+    }
+
+    // ========== 旅行 ==========
+    async function showTravelPanel() {
+      currentView = 'travel';
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      document.getElementById('nav-travel').classList.add('active');
+      document.getElementById('mainTitle').textContent = '旅行';
+
+      const list = document.getElementById('memoryList');
+
+      try {
+        const [travelsRes, luggageRes] = await Promise.all([
+          fetch('/api/travel/list').then(r => r.json()),
+          fetch('/api/travel/luggage').then(r => r.json())
+        ]);
+
+        let html = '';
+
+        // 行李
+        html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
+          <div style="color:var(--accent);font-weight:600;margin-bottom:8px;">🎒 行李</div>
+          <div class="md-preview" style="display:block;border:none;background:transparent;padding:0;font-size:13px;">${marked.parse(luggageRes.content || '')}</div>
+        </div>`;
+
+        // 旅行列表
+        if (travelsRes.length === 0) {
+          html += '<p style="color:var(--text-dim);text-align:center;padding:20px;">还没有旅行记录。</p>';
+        } else {
+          html += `<h3 style="font-size:15px;color:var(--accent);margin-bottom:10px;">旅行记录（${travelsRes.length}次）</h3>`;
+          for (const t of travelsRes) {
+            html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                <span style="color:var(--accent);font-weight:600;">${t.destination}</span>
+                <span style="color:var(--text-dim);font-size:12px;">${t.ended ? '已结束' : '进行中'} · ${t.steps}步</span>
+              </div>
+              <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">${new Date(t.startTime).toLocaleString('zh-CN')}</div>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-ghost btn-small" onclick="viewTravelScene('${t.id}')">查看场景</button>
+                ${t.hasJournal ? `<button class="btn btn-ghost btn-small" onclick="viewTravelJournal('${t.id}')">查看游记</button>` : ''}
+              </div>
+            </div>`;
+          }
+        }
+
+        list.innerHTML = html;
+      } catch (e) {
+        list.innerHTML = `<div class="empty-state"><p>加载失败：${e.message}</p></div>`;
+      }
+    }
+
+    async function viewTravelScene(id) {
+      const list = document.getElementById('memoryList');
+      try {
+        const data = await fetch(`/api/travel/scene/${id}`).then(r => r.json());
+        let html = `<div style="margin-bottom:10px;">
+          <button class="btn btn-ghost btn-small" onclick="showTravelPanel()">← 返回</button>
+          <span style="color:var(--accent);font-weight:600;margin-left:10px;">${data.destination}</span>
+        </div>`;
+
+        for (const entry of data.entries) {
+          if (entry.role === '场景') {
+            html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:8px;">
+              <div style="color:var(--text-dim);font-size:11px;margin-bottom:6px;">【场景】</div>
+              <div class="md-preview" style="display:block;border:none;background:transparent;padding:0;font-size:13px;">${marked.parse(entry.content || '')}</div>
+            </div>`;
+          } else {
+            html += `<div style="background:var(--accent-dim)20;border:1px solid var(--accent-dim)40;border-radius:8px;padding:10px 14px;margin-bottom:8px;">
+              <div style="color:var(--accent);font-size:11px;margin-bottom:4px;">【我】</div>
+              <div style="font-size:13px;color:var(--text);">${entry.content}</div>
+            </div>`;
+          }
+        }
+
+        list.innerHTML = html;
+      } catch (e) {
+        list.innerHTML = `<div class="empty-state"><p>加载失败</p></div>`;
+      }
+    }
+
+    async function viewTravelJournal(id) {
+      const list = document.getElementById('memoryList');
+      try {
+        const data = await fetch(`/api/travel/journal/${id}`).then(r => r.json());
+        list.innerHTML = `<div style="margin-bottom:10px;">
+          <button class="btn btn-ghost btn-small" onclick="showTravelPanel()">← 返回</button>
+          <span style="color:var(--accent);font-weight:600;margin-left:10px;">游记</span>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;">
+          <div class="md-preview" style="display:block;border:none;background:transparent;padding:0;font-size:13px;">${marked.parse(data.content || '')}</div>
+        </div>`;
+      } catch (e) {
+        list.innerHTML = `<div class="empty-state"><p>加载失败</p></div>`;
+      }
+    }
+
+    // 启动
+    init();
+  </script>
+</body>
+</html>

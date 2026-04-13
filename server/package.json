@@ -1,0 +1,15 @@
+{
+  "name": "xiaowo-server",
+  "version": "1.0.0",
+  "description": "小窝 - AI记忆管理系统",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "chromadb": "^3.4.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.0"
+  }
+}

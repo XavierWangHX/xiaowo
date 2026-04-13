@@ -1,0 +1,25 @@
+# 依赖
+node_modules/
+package-lock.json
+
+# 配置文件（含密钥）
+server/config.json
+
+# 用户数据
+data/
+chromadb-data/
+graph.json
+diary/
+travel_log/
+前缀.md
+
+# 自动备份
+**/.history/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
